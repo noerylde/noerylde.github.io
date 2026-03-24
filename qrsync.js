@@ -17,7 +17,7 @@
 // ============================================================
 // CONSTANTS
 // ============================================================
-const QR_MAX_CHUNK  = 1200;   // max chars per QR chunk (safe for mobile cams)
+const QR_MAX_CHUNK  = 450;    // max chars per QR chunk (low density, highly readable)
 const QR_CYCLE_MS   = 1800;   // ms per frame in animated display
 const DB_NAME       = 'MaintenanceRoutinesDB';
 const DB_VERSION    = 1;
@@ -225,7 +225,7 @@ async function startCameraScanner(divId, onComplete) {
     _html5Scanner = new Html5Qrcode(divId, { verbose: false });
     await _html5Scanner.start(
       { facingMode: 'environment' },
-      { fps: 10, qrbox: { width: 250, height: 250 } },
+      { fps: 15 }, // Scan full frame to improve detection range
       (decoded) => _processRawScan(decoded),
       () => {} // silent frame errors
     );
