@@ -1,0 +1,167 @@
+[
+  {
+    "ID": "READ-20260317-001",
+    "Equipment_ID": "REC-001",
+    "Timestamp": "2026-03-17T08:10:00.000Z",
+    "User": "Tech A",
+    "Pressure_1": 44.2,
+    "Pressure_2": null,
+    "Flow_In": 225,
+    "Flow_Out": 223,
+    "Comments": "Normal operation"
+  },
+  {
+    "ID": "READ-20260318-001",
+    "Equipment_ID": "REC-001",
+    "Timestamp": "2026-03-18T08:05:00.000Z",
+    "User": "Tech B",
+    "Pressure_1": 44.7,
+    "Pressure_2": null,
+    "Flow_In": 228,
+    "Flow_Out": 226,
+    "Comments": ""
+  },
+  {
+    "ID": "READ-20260319-001",
+    "Equipment_ID": "REC-001",
+    "Timestamp": "2026-03-19T08:20:00.000Z",
+    "User": "Tech A",
+    "Pressure_1": 43.9,
+    "Pressure_2": null,
+    "Flow_In": 224,
+    "Flow_Out": 222,
+    "Comments": "Slight vibration noted"
+  },
+  {
+    "ID": "READ-20260320-001",
+    "Equipment_ID": "REC-001",
+    "Timestamp": "2026-03-20T08:15:00.000Z",
+    "User": "Tech A",
+    "Pressure_1": 45.1,
+    "Pressure_2": null,
+    "Flow_In": 229,
+    "Flow_Out": 227,
+    "Comments": ""
+  },
+  {
+    "ID": "READ-20260321-001",
+    "Equipment_ID": "REC-001",
+    "Timestamp": "2026-03-21T08:00:00.000Z",
+    "User": "Tech B",
+    "Pressure_1": 45.4,
+    "Pressure_2": null,
+    "Flow_In": 230,
+    "Flow_Out": 228,
+    "Comments": "Vibration resolved"
+  },
+  {
+    "ID": "READ-20260324-001",
+    "Equipment_ID": "REC-001",
+    "Timestamp": "2026-03-24T08:15:00.000Z",
+    "User": "Tech A",
+    "Pressure_1": 45.8,
+    "Pressure_2": null,
+    "Flow_In": 231,
+    "Flow_Out": 229,
+    "Comments": ""
+  },
+  {
+    "ID": "READ-20260317-004",
+    "Equipment_ID": "REC-004",
+    "Timestamp": "2026-03-17T07:45:00.000Z",
+    "User": "Tech A",
+    "Pressure_1": 8.0,
+    "Pressure_2": 7.7,
+    "Flow_In": 398,
+    "Flow_Out": 394,
+    "Comments": "Filter change due next week"
+  },
+  {
+    "ID": "READ-20260318-004",
+    "Equipment_ID": "REC-004",
+    "Timestamp": "2026-03-18T07:50:00.000Z",
+    "User": "Tech A",
+    "Pressure_1": 8.1,
+    "Pressure_2": 7.8,
+    "Flow_In": 400,
+    "Flow_Out": 396,
+    "Comments": ""
+  },
+  {
+    "ID": "READ-20260319-004",
+    "Equipment_ID": "REC-004",
+    "Timestamp": "2026-03-19T07:55:00.000Z",
+    "User": "Tech B",
+    "Pressure_1": 7.9,
+    "Pressure_2": 7.6,
+    "Flow_In": 397,
+    "Flow_Out": 393,
+    "Comments": ""
+  },
+  {
+    "ID": "READ-20260320-004",
+    "Equipment_ID": "REC-004",
+    "Timestamp": "2026-03-20T07:40:00.000Z",
+    "User": "Tech A",
+    "Pressure_1": 8.2,
+    "Pressure_2": 7.9,
+    "Flow_In": 403,
+    "Flow_Out": 399,
+    "Comments": ""
+  },
+  {
+    "ID": "READ-20260321-004",
+    "Equipment_ID": "REC-004",
+    "Timestamp": "2026-03-21T08:05:00.000Z",
+    "User": "Tech A",
+    "Pressure_1": 8.0,
+    "Pressure_2": 7.8,
+    "Flow_In": 399,
+    "Flow_Out": 395,
+    "Comments": ""
+  },
+  {
+    "ID": "READ-20260324-004",
+    "Equipment_ID": "REC-004",
+    "Timestamp": "2026-03-24T07:50:00.000Z",
+    "User": "Tech A",
+    "Pressure_1": 8.2,
+    "Pressure_2": 7.9,
+    "Flow_In": 402,
+    "Flow_Out": 398,
+    "Comments": "All normal. Filter replaced."
+  },
+  {
+    "ID": "READ-20260320-003",
+    "Equipment_ID": "REC-003",
+    "Timestamp": "2026-03-20T09:00:00.000Z",
+    "User": "Tech B",
+    "Pressure_1": 47.5,
+    "Pressure_2": 11.8,
+    "Flow_In": null,
+    "Flow_Out": null,
+    "Comments": "Upstream/downstream pressures recorded"
+  },
+  {
+    "ID": "READ-20260321-003",
+    "Equipment_ID": "REC-003",
+    "Timestamp": "2026-03-21T09:00:00.000Z",
+    "User": "Tech B",
+    "Pressure_1": 48.1,
+    "Pressure_2": 12.3,
+    "Flow_In": null,
+    "Flow_Out": null,
+    "Comments": ""
+  },
+  {
+    "ID": "READ-20260324-008",
+    "Equipment_ID": "REC-008",
+    "Timestamp": "2026-03-24T06:30:00.000Z",
+    "User": "Tech A",
+    "Pressure_1": 4.1,
+    "Pressure_2": null,
+    "Flow_In": null,
+    "Flow_Out": null,
+    "Comments": "Monthly load test passed. Fuel at 91%."
+  }
+]

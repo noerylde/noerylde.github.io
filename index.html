@@ -1,0 +1,479 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Maintenance Routines</title>
+  <meta name="description" content="Industrial Equipment Maintenance Tracker — offline-first PWA" />
+  <meta name="theme-color" content="#4f8ef7" />
+  <link rel="manifest" href="manifest.json" />
+  <link rel="icon" href="icon-512.png" />
+  <link rel="apple-touch-icon" href="icon-512.png" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+  <div id="toast" class="toast" role="alert" aria-live="polite"></div>
+
+  <!-- ═══════════ MODE SELECTION SCREEN ═══════════ -->
+  <div id="modeSelectScreen" class="mode-select-screen">
+    <div class="mode-select-inner">
+      <div class="mode-logo">⚙️</div>
+      <h1 class="mode-title">Maintenance Routines</h1>
+      <p class="mode-subtitle">Industrial Equipment Maintenance Tracker</p>
+      <div class="mode-cards">
+        <button class="mode-card" id="btnPCMode">
+          <div class="mode-card-icon">🖥️</div>
+          <h2>Shop PC Mode</h2>
+          <ul>
+            <li>Open Routines &amp; History files</li>
+            <li>Full edit &amp; archive access</li>
+            <li>Generate Checkout QR for phones</li>
+            <li>Scan incoming Sync QR</li>
+          </ul>
+          <span class="mode-card-cta">Enter PC Mode →</span>
+        </button>
+        <button class="mode-card" id="btnMobileMode">
+          <div class="mode-card-icon">📱</div>
+          <h2>Mobile Floor Mode</h2>
+          <ul>
+            <li>Works fully offline (IndexedDB)</li>
+            <li>Scan Checkout QR from PC</li>
+            <li>Log readings on the floor</li>
+            <li>Generate Sync QR to upload</li>
+          </ul>
+          <span class="mode-card-cta">Enter Mobile Mode →</span>
+        </button>
+      </div>
+      <p class="mode-hint">Your choice is remembered for this session.</p>
+    </div>
+  </div>
+
+  <!-- ═══════════ HEADER ═══════════ -->
+  <header class="app-header hidden" id="appHeader">
+    <div class="header-left">
+      <div class="logo-mark">⚙️</div>
+      <div class="header-titles">
+        <h1>Maintenance Routines</h1>
+        <p class="subtitle" id="modeIndicatorBadge">PC Mode</p>
+      </div>
+    </div>
+    <div class="header-right">
+      <div id="routinesIndicator" class="file-indicator pc-only">
+        <span class="file-icon">📋</span>
+        <span id="routinesFileName" class="file-name">Routines: not loaded</span>
+      </div>
+      <div id="historyIndicator" class="file-indicator pc-only">
+        <span class="file-icon">📜</span>
+        <span id="historyFileName" class="file-name">History: not loaded</span>
+      </div>
+      <!-- Theme toggle -->
+      <div class="theme-toggle-wrap" title="Toggle light/dark theme">
+        <span class="theme-icon">☀️</span>
+        <label class="toggle-switch">
+          <input type="checkbox" id="themeToggle" />
+          <span class="toggle-knob"></span>
+        </label>
+        <span class="theme-icon">🌙</span>
+      </div>
+    </div>
+  </header>
+
+  <!-- ═══════════ TOOLBAR ═══════════ -->
+  <div class="toolbar hidden" id="toolbar">
+    <div class="toolbar-left">
+      <!-- PC-only buttons -->
+      <button id="btnOpenRoutines" class="btn btn-primary pc-only" title="Open Routines.json">
+        <span class="btn-icon">📋</span> Open Routines
+      </button>
+      <button id="btnOpenHistory" class="btn btn-secondary pc-only" title="Open History.json">
+        <span class="btn-icon">📜</span> Open History
+      </button>
+      <button id="btnSave" class="btn btn-success pc-only" disabled title="Save &amp; Sync (Ctrl+S)">
+        <span class="btn-icon">💾</span> Save &amp; Sync
+        <span id="syncSpinner" class="spinner hidden" aria-hidden="true"></span>
+      </button>
+      <!-- Mobile-only reload from IDB -->
+      <button id="btnMobileRefresh" class="btn btn-secondary mobile-only hidden" title="Re-read from device storage">
+        <span class="btn-icon">🔄</span> Refresh
+      </button>
+    </div>
+
+    <div class="toolbar-center" id="editModeWrap" style="display:none">
+      <span class="edit-mode-label">Edit Mode</span>
+      <label class="toggle-switch" title="Toggle Edit / Admin Mode">
+        <input type="checkbox" id="editModeToggle" />
+        <span class="toggle-knob"></span>
+      </label>
+      <span class="edit-mode-badge hidden" id="editModeBadge">🔓 EDITING</span>
+    </div>
+
+    <div class="toolbar-right">
+      <button id="btnQRSync" class="btn btn-secondary" title="QR Air-Gap Sync">
+        <span class="btn-icon">📷</span> QR Sync
+        <span id="unsyncedBadge" class="unsynced-badge hidden">0 unsynced</span>
+      </button>
+      <button id="btnUsers" class="btn btn-secondary pc-only" style="display:none" title="Manage technicians">
+        👥 Users
+      </button>
+      <button id="btnRefresh" class="btn btn-secondary btn-icon-only pc-only" style="display:none" title="Re-read files">🔄</button>
+      <div id="statusBadge" class="status-badge status-idle">Ready</div>
+      <div id="changeCount" class="change-count hidden">
+        <span id="changeNum">0</span> unsaved
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════ FILTER BAR ═══════════ -->
+  <div class="filter-bar hidden" id="filterBar">
+    <input type="text" id="searchInput" class="search-input" placeholder="🔍  Search BSI, type, serial, location…" />
+    <label class="filter-label">
+      <input type="checkbox" id="filterOverdue" class="filter-checkbox" />
+      Overdue only
+    </label>
+    <label class="filter-label pc-only">
+      <input type="checkbox" id="filterShowArchived" class="filter-checkbox" />
+      Show Archived
+    </label>
+  </div>
+
+  <!-- ═══════════ MAIN ═══════════ -->
+  <main class="main-content">
+    <div id="emptyState" class="empty-state hidden">
+      <div class="empty-icon">🗂️</div>
+      <h2 id="emptyStateTitle">No Data Loaded</h2>
+      <p id="emptyStateMsg">Use the buttons above to load equipment data.</p>
+    </div>
+
+    <div id="tableContainer" class="table-wrapper hidden">
+      <table id="routinesTable" class="routines-table">
+        <thead>
+          <tr>
+            <th class="col-bsi">BSI #</th>
+            <th class="col-type">Type</th>
+            <th class="col-serial">Serial</th>
+            <th class="col-loc">Location</th>
+            <th class="col-due">Due Date</th>
+            <th class="col-svc">In Service</th>
+            <th class="col-reading">Last Reading</th>
+            <th class="col-actions">Actions</th>
+          </tr>
+        </thead>
+        <tbody id="tableBody"></tbody>
+      </table>
+    </div>
+
+    <div id="loadingOverlay" class="loading-overlay hidden">
+      <div class="loader-card">
+        <div class="loader-spinner"></div>
+        <p id="loadingMessage">Loading…</p>
+      </div>
+    </div>
+  </main>
+
+  <!-- ═══════════ FOOTER ═══════════ -->
+  <footer class="app-footer hidden" id="appFooter">
+    <div class="stats">
+      <span id="statTotal">0 total</span>
+      <span class="divider">|</span>
+      <span id="statActive">0 active</span>
+      <span class="divider">|</span>
+      <span id="statOverdue">0 overdue</span>
+      <span class="divider">|</span>
+      <span id="statToday">0 logged today</span>
+    </div>
+    <div class="footer-right">
+      <span id="modeFooterBadge" class="mode-footer-badge"></span>
+      <span id="lastSaved">Never saved</span>
+    </div>
+  </footer>
+
+  <!-- ═══════════════ MODAL: Log Reading ═══════════════ -->
+  <div id="logModal" class="modal-overlay hidden" role="dialog" aria-modal="true">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h2 id="logModalTitle">📝 Log Reading</h2>
+        <button class="modal-close" id="logModalClose">✕</button>
+      </div>
+      <div class="modal-body">
+        <p class="modal-subtitle" id="logModalSubtitle"></p>
+        <div class="form-grid">
+          <div class="form-group full-width">
+            <label for="lr_user">Technician <span class="required">*</span></label>
+            <select id="lr_user" class="form-input"><option value="">— Select —</option></select>
+          </div>
+          <div class="form-group">
+            <label for="lr_p1">Pressure 1 <span class="field-hint">(bar)</span></label>
+            <input id="lr_p1" type="number" step="0.1" class="form-input" placeholder="e.g. 45.2" />
+          </div>
+          <div class="form-group" id="lr_p2_group">
+            <label for="lr_p2">Pressure 2 <span class="field-hint">(bar)</span></label>
+            <input id="lr_p2" type="number" step="0.1" class="form-input" placeholder="e.g. 44.8" />
+          </div>
+          <div class="form-group">
+            <label for="lr_flow_in">Flow In <span class="field-hint">(L/min)</span></label>
+            <input id="lr_flow_in" type="number" step="0.1" class="form-input" placeholder="" />
+          </div>
+          <div class="form-group">
+            <label for="lr_flow_out">Flow Out <span class="field-hint">(L/min)</span></label>
+            <input id="lr_flow_out" type="number" step="0.1" class="form-input" placeholder="" />
+          </div>
+          <div class="form-group full-width">
+            <label for="lr_comments">Comments</label>
+            <textarea id="lr_comments" class="form-textarea" rows="2" placeholder="Any observations…"></textarea>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button id="logModalCancel" class="btn btn-secondary">Cancel</button>
+        <button id="logModalSubmit" class="btn btn-success">
+          <span class="btn-icon">✅</span> Submit Reading
+          <span id="logSpinner" class="spinner hidden"></span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════ MODAL: Trend View ═══════════════ -->
+  <div id="trendModal" class="modal-overlay hidden" role="dialog" aria-modal="true">
+    <div class="modal-card modal-wide">
+      <div class="modal-header">
+        <div class="trend-header-left">
+          <h2 id="trendTitle">📈 Trend View</h2>
+          <span id="trendSubtitle" class="trend-subtitle"></span>
+        </div>
+        <div class="trend-header-right">
+          <select id="trendRange" class="form-input form-input-sm">
+            <option value="7">Last 7 days</option>
+            <option value="30" selected>Last 30 days</option>
+            <option value="90">Last 90 days</option>
+            <option value="365">Last year</option>
+            <option value="0">All time</option>
+          </select>
+          <button class="modal-close" id="trendClose">✕</button>
+        </div>
+      </div>
+      <div class="modal-body trend-body">
+        <div id="trendNoData" class="trend-no-data hidden">
+          <p>📊 No readings in selected period. Log a reading to begin trending.</p>
+        </div>
+        <div class="chart-container" id="chartContainer">
+          <canvas id="trendChart"></canvas>
+        </div>
+        <div class="reading-history-wrap">
+          <h3 class="reading-history-title">Reading Log</h3>
+          <div id="readingHistoryTable"></div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button id="trendClose2" class="btn btn-secondary">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════ MODAL: Equipment Add/Edit ═══════════════ -->
+  <div id="equipModal" class="modal-overlay hidden" role="dialog" aria-modal="true">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h2 id="equipModalTitle">Add Equipment</h2>
+        <button class="modal-close" id="equipModalClose">✕</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-grid">
+          <div class="form-group">
+            <label for="eq_bsi">BSI Number <span class="required">*</span></label>
+            <input id="eq_bsi" type="text" class="form-input" />
+          </div>
+          <div class="form-group">
+            <label for="eq_type">Equipment Type <span class="required">*</span></label>
+            <input id="eq_type" type="text" class="form-input" />
+          </div>
+          <div class="form-group">
+            <label for="eq_serial">Serial Number</label>
+            <input id="eq_serial" type="text" class="form-input" />
+          </div>
+          <div class="form-group">
+            <label for="eq_location">Location</label>
+            <input id="eq_location" type="text" class="form-input" />
+          </div>
+          <div class="form-group">
+            <label for="eq_due">Due Date</label>
+            <input id="eq_due" type="date" class="form-input" />
+          </div>
+          <div class="form-group center-check">
+            <label for="eq_inservice">In Service</label>
+            <input id="eq_inservice" type="checkbox" class="form-checkbox" checked />
+          </div>
+          <div class="form-group center-check">
+            <label for="eq_dual">Dual Pressure <span class="field-hint">(2 bottles)</span></label>
+            <input id="eq_dual" type="checkbox" class="form-checkbox" />
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button id="equipModalCancel" class="btn btn-secondary">Cancel</button>
+        <button id="equipModalSave" class="btn btn-primary">Save Equipment</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════ MODAL: Archive ═══════════════ -->
+  <div id="archiveDialog" class="modal-overlay hidden" role="dialog" aria-modal="true">
+    <div class="modal-card confirm-card">
+      <div class="modal-header">
+        <h2>📦 Archive Equipment?</h2>
+        <button class="modal-close" id="archiveDialogClose">✕</button>
+      </div>
+      <div class="modal-body">
+        <p id="archiveMessage"></p>
+        <p class="confirm-sub">All historical readings are preserved.</p>
+      </div>
+      <div class="modal-footer">
+        <button id="archiveCancel" class="btn btn-secondary">Cancel</button>
+        <button id="archiveConfirm" class="btn btn-warning">📦 Archive</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════ MODAL: User Management ═══════════════ -->
+  <div id="userModal" class="modal-overlay hidden" role="dialog" aria-modal="true">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h2>👥 Manage Technicians</h2>
+        <button class="modal-close" id="userModalClose">✕</button>
+      </div>
+      <div class="modal-body">
+        <p class="modal-subtitle">Names saved in this browser's localStorage.</p>
+        <div id="userList" class="user-list"></div>
+        <div class="add-user-row">
+          <input id="newUserInput" type="text" class="form-input" placeholder="Technician name…" maxlength="60" />
+          <button id="addUserBtn" class="btn btn-primary btn-sm">+ Add</button>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button id="userModalDone" class="btn btn-secondary">Done</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════
+       MODAL: QR Air-Gap Sync
+  ════════════════════════════════════════════════ -->
+  <div id="qrSyncModal" class="modal-overlay hidden" role="dialog" aria-modal="true">
+    <div class="modal-card modal-wide">
+      <div class="modal-header">
+        <h2>📷 QR Air-Gap Sync</h2>
+        <button class="modal-close" id="qrSyncClose">✕</button>
+      </div>
+
+      <!-- Tab bar -->
+      <div class="qr-tabs">
+        <button class="qr-tab-btn qr-tab-active" data-tab="pc-to-phone">
+          🖥️ → 📱 Checkout
+        </button>
+        <button class="qr-tab-btn" data-tab="phone-to-pc">
+          📱 → 🖥️ Daily Sync
+        </button>
+      </div>
+
+      <div class="modal-body">
+
+        <!-- ── Tab: PC → Phone ─────────────────────────── -->
+        <div class="qr-tab-pane" data-tab="pc-to-phone">
+          <div class="qr-split">
+            <!-- Left: Generate QR (PC) -->
+            <div class="qr-panel" id="panelGenerateCheckout">
+              <h3 class="qr-panel-title">🖥️ Shop PC — Generate Checkout</h3>
+              <p class="qr-panel-hint">Compresses the master Routines list into an animated QR for the phone to scan.</p>
+              <button id="btnGenerateCheckout" class="btn btn-primary btn-full">Generate Checkout QR</button>
+              <div class="qr-canvas-wrap">
+                <canvas id="qrCanvas" class="qr-canvas hidden"></canvas>
+                <p id="qrFrameInfo" class="qr-frame-info"></p>
+                <p id="qrFrameCount" class="qr-frame-count"></p>
+              </div>
+            </div>
+            <!-- Right: Scan Checkout (Phone) -->
+            <div class="qr-panel" id="panelScanCheckout">
+              <h3 class="qr-panel-title">📱 Phone — Scan Checkout</h3>
+              <p class="qr-panel-hint">Point your camera at the PC screen to ingest the equipment list.</p>
+              <button id="btnScanCheckout" class="btn btn-success btn-full">▶ Start Camera</button>
+              <div id="qrScannerDiv" class="qr-scanner-container"></div>
+              <p id="scanProgress" class="qr-scan-progress"></p>
+              <details class="qr-paste-details">
+                <summary>Paste / Keyboard Wedge fallback</summary>
+                <textarea id="pasteInput" class="form-textarea qr-paste-input" placeholder="Paste MRQR chunk text here…" rows="3"></textarea>
+                <button id="btnPasteCheckout" class="btn btn-secondary btn-sm">Process Pasted Data</button>
+              </details>
+            </div>
+          </div>
+        </div>
+
+        <!-- ── Tab: Phone → PC ─────────────────────────── -->
+        <div class="qr-tab-pane hidden" data-tab="phone-to-pc">
+          <div class="qr-split">
+            <!-- Left: Generate Sync QR (Phone) -->
+            <div class="qr-panel">
+              <h3 class="qr-panel-title">📱 Phone — Generate Sync QR</h3>
+              <p class="qr-panel-hint">Bundles today's action log (readings + changes) into a QR for the PC to scan.</p>
+              <button id="btnGenerateSync" class="btn btn-primary btn-full">Generate Sync QR</button>
+              <div class="qr-canvas-wrap">
+                <canvas id="qrCanvasSync" class="qr-canvas hidden"></canvas>
+                <p id="qrFrameInfo" class="qr-frame-info"></p>
+                <p id="qrFrameCount" class="qr-frame-count"></p>
+              </div>
+            </div>
+            <!-- Right: Scan Daily Sync (PC) -->
+            <div class="qr-panel">
+              <h3 class="qr-panel-title">🖥️ Shop PC — Scan Daily Sync</h3>
+              <p class="qr-panel-hint">Scan the phone's QR to merge today's readings and status changes.</p>
+              <button id="btnScanSync" class="btn btn-success btn-full">▶ Start Camera</button>
+              <div id="qrScannerDivSync" class="qr-scanner-container"></div>
+              <p id="scanProgressSync" class="qr-scan-progress"></p>
+              <details class="qr-paste-details">
+                <summary>Paste / Keyboard Wedge fallback</summary>
+                <textarea id="pasteInputSync" class="form-textarea qr-paste-input" placeholder="Paste MRQR chunk text here…" rows="3"></textarea>
+                <button id="btnPasteSync" class="btn btn-secondary btn-sm">Process Pasted Data</button>
+              </details>
+            </div>
+          </div>
+        </div>
+
+      </div><!-- /.modal-body -->
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════
+       MODAL: Conflict Warning (high-visibility)
+  ════════════════════════════════════════════════ -->
+  <div id="conflictModal" class="modal-overlay hidden" role="dialog" aria-modal="true">
+    <div class="modal-card conflict-card">
+      <div class="modal-header conflict-header">
+        <h2>⚠️ Timestamp Conflict Detected</h2>
+      </div>
+      <div class="modal-body">
+        <p class="conflict-intro">
+          The incoming sync data is <strong>older</strong> than data currently on this device.
+          Proceeding may overwrite newer records.
+        </p>
+        <div id="conflictList" class="conflict-list"></div>
+      </div>
+      <div class="modal-footer conflict-footer">
+        <button id="conflictCancel" class="btn btn-secondary">Cancel — Abort Sync</button>
+        <button id="conflictSkip" class="btn btn-warning">Skip Conflicts Only</button>
+        <button id="conflictForce" class="btn btn-danger">Force Overwrite All</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════ SCRIPTS ═══════════ -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/lz-string@1.5.0/libs/lz-string.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+  <script src="app.js"></script>
+  <script src="qrsync.js"></script>
+</body>
+</html>

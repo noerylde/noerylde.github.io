@@ -1,0 +1,134 @@
+[
+  {
+    "ID": "REC-001",
+    "BSI_Number": "BSI-0101",
+    "Equipment_Type": "Centrifugal Pump",
+    "Serial_Number": "SN-7734A",
+    "Location": "Pump Station A",
+    "Due_Date": "2026-04-10",
+    "is_active": true,
+    "In_Service": true,
+    "has_two_pressures": false,
+    "last_modified": "2026-03-24T13:00:00.000Z",
+    "last_reading": {
+      "Timestamp": "2026-03-24T08:15:00.000Z",
+      "User": "Tech A",
+      "Pressure_1": 45.8,
+      "Pressure_2": null,
+      "Flow_In": 231,
+      "Flow_Out": 229
+    }
+  },
+  {
+    "ID": "REC-002",
+    "BSI_Number": "BSI-0102",
+    "Equipment_Type": "Gate Valve",
+    "Serial_Number": "SN-2210B",
+    "Location": "Pump Station A",
+    "Due_Date": "2026-03-15",
+    "is_active": true,
+    "In_Service": true,
+    "has_two_pressures": false,
+    "last_modified": "2026-03-20T09:00:00.000Z",
+    "last_reading": null
+  },
+  {
+    "ID": "REC-003",
+    "BSI_Number": "BSI-0103",
+    "Equipment_Type": "Pressure Relief Valve",
+    "Serial_Number": "SN-PRV-003",
+    "Location": "Building B — Line 3",
+    "Due_Date": "2026-02-28",
+    "is_active": true,
+    "In_Service": false,
+    "has_two_pressures": true,
+    "last_modified": "2026-03-21T09:00:00.000Z",
+    "last_reading": {
+      "Timestamp": "2026-03-21T09:00:00.000Z",
+      "User": "Tech B",
+      "Pressure_1": 48.1,
+      "Pressure_2": 12.3,
+      "Flow_In": null,
+      "Flow_Out": null
+    }
+  },
+  {
+    "ID": "REC-004",
+    "BSI_Number": "BSI-0104",
+    "Equipment_Type": "Air Compressor",
+    "Serial_Number": "SN-COMP-41",
+    "Location": "Compressor Room",
+    "Due_Date": "2026-05-20",
+    "is_active": true,
+    "In_Service": true,
+    "has_two_pressures": true,
+    "last_modified": "2026-03-24T07:50:00.000Z",
+    "last_reading": {
+      "Timestamp": "2026-03-24T07:50:00.000Z",
+      "User": "Tech A",
+      "Pressure_1": 8.2,
+      "Pressure_2": 7.9,
+      "Flow_In": 402,
+      "Flow_Out": 398
+    }
+  },
+  {
+    "ID": "REC-005",
+    "BSI_Number": "BSI-0105",
+    "Equipment_Type": "Heat Exchanger",
+    "Serial_Number": "SN-HX-105",
+    "Location": "Building C",
+    "Due_Date": "2026-06-01",
+    "is_active": true,
+    "In_Service": true,
+    "has_two_pressures": false,
+    "last_modified": "2026-03-20T09:00:00.000Z",
+    "last_reading": null
+  },
+  {
+    "ID": "REC-006",
+    "BSI_Number": "BSI-0106",
+    "Equipment_Type": "Check Valve",
+    "Serial_Number": "SN-CV-006",
+    "Location": "Pump Station B",
+    "Due_Date": "2026-01-31",
+    "is_active": true,
+    "In_Service": false,
+    "has_two_pressures": false,
+    "last_modified": "2026-03-20T09:00:00.000Z",
+    "last_reading": null
+  },
+  {
+    "ID": "REC-007",
+    "BSI_Number": "BSI-0107",
+    "Equipment_Type": "Motor-Operated Valve",
+    "Serial_Number": "SN-MOV-007",
+    "Location": "Building A — Level 2",
+    "Due_Date": "2026-04-30",
+    "is_active": true,
+    "In_Service": true,
+    "has_two_pressures": false,
+    "last_modified": "2026-03-20T09:00:00.000Z",
+    "last_reading": null
+  },
+  {
+    "ID": "REC-008",
+    "BSI_Number": "BSI-0108",
+    "Equipment_Type": "Diesel Generator",
+    "Serial_Number": "SN-GEN-88X",
+    "Location": "Generator Building",
+    "Due_Date": "2026-03-30",
+    "is_active": true,
+    "In_Service": true,
+    "has_two_pressures": false,
+    "last_modified": "2026-03-24T06:30:00.000Z",
+    "last_reading": {
+      "Timestamp": "2026-03-24T06:30:00.000Z",
+      "User": "Tech A",
+      "Pressure_1": 4.1,
+      "Pressure_2": null,
+      "Flow_In": null,
+      "Flow_Out": null
+    }
+  }
+]
