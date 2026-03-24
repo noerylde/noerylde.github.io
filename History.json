@@ -70,7 +70,7 @@
     "Equipment_ID": "REC-004",
     "Timestamp": "2026-03-17T07:45:00.000Z",
     "User": "Tech A",
-    "Pressure_1": 8.0,
+    "Pressure_1": 8,
     "Pressure_2": 7.7,
     "Flow_In": 398,
     "Flow_Out": 394,
@@ -114,7 +114,7 @@
     "Equipment_ID": "REC-004",
     "Timestamp": "2026-03-21T08:05:00.000Z",
     "User": "Tech A",
-    "Pressure_1": 8.0,
+    "Pressure_1": 8,
     "Pressure_2": 7.8,
     "Flow_In": 399,
     "Flow_Out": 395,
@@ -163,5 +163,93 @@
     "Flow_In": null,
     "Flow_Out": null,
     "Comments": "Monthly load test passed. Fuel at 91%."
+  },
+  {
+    "ID": "READ-1774373770912-2196",
+    "Equipment_ID": "REC-001",
+    "Timestamp": "2026-03-24T17:36:10.912Z",
+    "User": "Ryley",
+    "Pressure_1": 1,
+    "Pressure_2": null,
+    "Flow_In": 1,
+    "Flow_Out": 1,
+    "Comments": "1"
+  },
+  {
+    "ID": "READ-1774373839088-4323",
+    "Equipment_ID": "REC-1774373817035-8616",
+    "Timestamp": "2026-03-24T17:37:19.088Z",
+    "User": "Ryley",
+    "Pressure_1": 2000,
+    "Pressure_2": null,
+    "Flow_In": 10,
+    "Flow_Out": 10,
+    "Comments": "All good!"
+  },
+  {
+    "ID": "READ-1774373859954-8148",
+    "Equipment_ID": "REC-1774373817035-8616",
+    "Timestamp": "2026-03-24T17:37:39.954Z",
+    "User": "Ryley",
+    "Pressure_1": 2000,
+    "Pressure_2": null,
+    "Flow_In": 10,
+    "Flow_Out": 10,
+    "Comments": "All good"
+  },
+  {
+    "ID": "READ-1774373884405-9539",
+    "Equipment_ID": "REC-1774373817035-8616",
+    "Timestamp": "2026-03-24T17:38:04.405Z",
+    "User": "Ryley",
+    "Pressure_1": 1000,
+    "Pressure_2": null,
+    "Flow_In": 5,
+    "Flow_Out": 1,
+    "Comments": "Not looking good!"
+  },
+  {
+    "ID": "READ-1774374833980-3388",
+    "Equipment_ID": "REC-1774374827696-9106",
+    "Timestamp": "2026-03-24T17:53:53.980Z",
+    "User": "Ryley",
+    "Pressure_1": null,
+    "Pressure_2": null,
+    "Flow_In": null,
+    "Flow_Out": null,
+    "Comments": ""
+  },
+  {
+    "ID": "READ-1774374845128-4465",
+    "Equipment_ID": "REC-1774374827696-9106",
+    "Timestamp": "2026-03-24T17:54:05.128Z",
+    "User": "Ryley",
+    "Pressure_1": null,
+    "Pressure_2": null,
+    "Flow_In": null,
+    "Flow_Out": null,
+    "Comments": ""
+  },
+  {
+    "ID": "READ-1774375265474-6953",
+    "Equipment_ID": "REC-1774374827696-9106",
+    "Timestamp": "2026-03-24T18:01:05.474Z",
+    "User": "Ryley",
+    "Pressure_1": null,
+    "Pressure_2": null,
+    "Flow_In": null,
+    "Flow_Out": null,
+    "Comments": "Looks good"
+  },
+  {
+    "ID": "READ-1774375283289-8527",
+    "Equipment_ID": "REC-1774373817035-8616",
+    "Timestamp": "2026-03-24T18:01:23.289Z",
+    "User": "Ryley",
+    "Pressure_1": 2000,
+    "Pressure_2": null,
+    "Flow_In": 100,
+    "Flow_Out": 100,
+    "Comments": "FUGG"
   }
 ]

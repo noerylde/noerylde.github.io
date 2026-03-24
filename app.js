@@ -565,17 +565,23 @@ function buildRow(rec) {
 
   let readingHtml = '<span class="reading-none">No readings yet</span>';
   if (lr) {
-    const b = [];
-    if (lr.Pressure_1 !== null && lr.Pressure_1 !== undefined && lr.Pressure_1 !== '')
-      b.push(`<span class="reading-badge badge-p1">P1: ${formatNum(lr.Pressure_1)} bar</span>`);
-    if (rec.has_two_pressures && lr.Pressure_2 !== null && lr.Pressure_2 !== undefined && lr.Pressure_2 !== '')
-      b.push(`<span class="reading-badge badge-p2">P2: ${formatNum(lr.Pressure_2)} bar</span>`);
-    if (lr.Flow_In  !== null && lr.Flow_In  !== '') b.push(`<span class="reading-badge badge-flow-in">↓ ${formatNum(lr.Flow_In)} L/m</span>`);
-    if (lr.Flow_Out !== null && lr.Flow_Out !== '') b.push(`<span class="reading-badge badge-flow-out">↑ ${formatNum(lr.Flow_Out)} L/m</span>`);
-    readingHtml = `<div class="reading-cell">
-      <div class="reading-values">${b.join('')}</div>
-      <div class="reading-meta">${formatDateTime(lr.Timestamp)} · ${esc(lr.User||'')}</div>
-    </div>`;
+    if (rec.has_gas === false) {
+      readingHtml = `<div class="reading-cell">
+        <div class="reading-meta">Last Checked ${rec.In_Service ? 'In Service' : 'Out of Service'}, ${formatDateTime(lr.Timestamp)}</div>
+      </div>`;
+    } else {
+      const b = [];
+      if (lr.Pressure_1 !== null && lr.Pressure_1 !== undefined && lr.Pressure_1 !== '')
+        b.push(`<span class="reading-badge badge-p1">P1: ${formatNum(lr.Pressure_1)} psi</span>`);
+      if (rec.has_two_pressures && lr.Pressure_2 !== null && lr.Pressure_2 !== undefined && lr.Pressure_2 !== '')
+        b.push(`<span class="reading-badge badge-p2">P2: ${formatNum(lr.Pressure_2)} psi</span>`);
+      if (lr.Flow_In  !== null && lr.Flow_In  !== '') b.push(`<span class="reading-badge badge-flow-in">↓ ${formatNum(lr.Flow_In)} L/m</span>`);
+      if (lr.Flow_Out !== null && lr.Flow_Out !== '') b.push(`<span class="reading-badge badge-flow-out">↑ ${formatNum(lr.Flow_Out)} L/m</span>`);
+      readingHtml = `<div class="reading-cell">
+        <div class="reading-values">${b.join('')}</div>
+        <div class="reading-meta">${formatDateTime(lr.Timestamp)} · ${esc(lr.User||'')}</div>
+      </div>`;
+    }
   }
 
   tr.innerHTML = `
@@ -584,7 +590,10 @@ function buildRow(rec) {
     <td style="color:var(--text-sub);font-size:0.82rem">${esc(rec.Serial_Number||'—')}</td>
     <td style="color:var(--text-sub);font-size:0.82rem">${esc(rec.Location||'—')}</td>
     <td><span class="due-badge ${dueCls}">${duePrefix}${formatDate(rec.Due_Date)}</span></td>
-    <td class="col-svc"><input type="checkbox" class="service-toggle" data-id="${esc(rec.ID)}" ${rec.In_Service?'checked':''} /></td>
+    <td class="col-svc" style="text-align:center">
+      <span class="view-only" style="font-size:1.15rem; cursor:help" title="${rec.In_Service?'In Service':'Out of Service'}">${rec.In_Service ? '✅' : '❌'}</span>
+      <div class="edit-only"><input type="checkbox" class="service-toggle" data-id="${esc(rec.ID)}" ${rec.In_Service?'checked':''} /></div>
+    </td>
     <td>${readingHtml}</td>
     <td>
       <div class="action-group">
@@ -646,7 +655,14 @@ function openLogModal(equipId) {
 
   logModalTitle.textContent    = '📝 Log Reading';
   logModalSubtitle.textContent = `${rec.BSI_Number||''} — ${rec.Equipment_Type||''}`;
-  lr_p2_group.style.display    = rec.has_two_pressures ? '' : 'none';
+  
+  const hasGas = rec.has_gas !== false; // defaults true
+  lr_p1_group.style.display       = hasGas ? '' : 'none';
+  lr_flow_in_group.style.display  = hasGas ? '' : 'none';
+  lr_flow_out_group.style.display = hasGas ? '' : 'none';
+  lr_p2_group.style.display       = (hasGas && rec.has_two_pressures) ? '' : 'none';
+
+  lr_inservice.checked = !!rec.In_Service;
 
   populateUserDropdown();
   lr_p1.value = lr_p2.value = lr_flow_in.value = lr_flow_out.value = '';
@@ -685,6 +701,14 @@ logModalCancel.addEventListener('click', closeLogModal);
 logModal.addEventListener('click', e => { if (e.target === logModal) closeLogModal(); });
 logModalSubmit.addEventListener('click', () => {
   if (!lr_user.value) return showToast('Select a technician.', 'warning');
+
+  // Update In Service status directly
+  const rec = getEffectiveRecords().find(r => r.ID === loggingEquipId);
+  if (rec && !!rec.In_Service !== lr_inservice.checked) {
+    if (!pendingChanges[loggingEquipId]) pendingChanges[loggingEquipId] = {};
+    pendingChanges[loggingEquipId].In_Service = lr_inservice.checked;
+  }
+
   logReading(loggingEquipId, {
     user: lr_user.value, p1: lr_p1.value, p2: lr_p2.value,
     flowIn: lr_flow_in.value, flowOut: lr_flow_out.value, comments: lr_comments.value.trim(),
@@ -753,12 +777,12 @@ function buildTrendChart(rec) {
 
   const labels = readings.map(r => formatDateTime(r.Timestamp));
   const datasets = [{
-    label: 'Pressure 1 (bar)', data: readings.map(r => r.Pressure_1 ?? null),
+    label: 'Pressure 1 (psi)', data: readings.map(r => r.Pressure_1 ?? null),
     borderColor: '#4f8ef7', backgroundColor: 'rgba(79,142,247,0.08)', tension: 0.3,
     yAxisID: 'yP', pointRadius: 4, fill: true,
   }];
   if (rec.has_two_pressures && readings.some(r => r.Pressure_2 !== null)) {
-    datasets.push({ label: 'Pressure 2 (bar)', data: readings.map(r => r.Pressure_2 ?? null),
+    datasets.push({ label: 'Pressure 2 (psi)', data: readings.map(r => r.Pressure_2 ?? null),
       borderColor: '#a78bfa', backgroundColor: 'rgba(167,139,250,0.06)', tension: 0.3, yAxisID: 'yP', pointRadius: 4 });
   }
   if (readings.some(r => r.Flow_In !== null)) {
@@ -783,13 +807,13 @@ function buildTrendChart(rec) {
       },
       scales: {
         x: { ticks: { color: txtCol, font: { size: 11 }, maxTicksLimit: 10 }, grid: { color: gridCol } },
-        yP: { type: 'linear', position: 'left', ticks: { color: '#4f8ef7', font: { size: 11 } }, grid: { color: gridCol }, title: { display: true, text: 'Pressure (bar)', color: '#4f8ef7', font: { size: 11 } } },
+        yP: { type: 'linear', position: 'left', ticks: { color: '#4f8ef7', font: { size: 11 } }, grid: { color: gridCol }, title: { display: true, text: 'Pressure (psi)', color: '#4f8ef7', font: { size: 11 } } },
         yF: { type: 'linear', position: 'right', ticks: { color: '#2ec77a', font: { size: 11 } }, grid: { drawOnChartArea: false }, title: { display: true, text: 'Flow (L/min)', color: '#2ec77a', font: { size: 11 } } },
       },
     },
   });
 
-  const p2Col = rec.has_two_pressures ? '<th>P2 (bar)</th>' : '';
+  const p2Col = rec.has_two_pressures ? '<th>P2 (psi)</th>' : '';
   const rows  = [...readings].reverse().map(r => `<tr>
     <td>${formatDateTime(r.Timestamp)}</td><td>${esc(r.User||'—')}</td>
     <td>${formatNum(r.Pressure_1)}</td>${rec.has_two_pressures?`<td>${formatNum(r.Pressure_2)}</td>`:''}
@@ -797,7 +821,7 @@ function buildTrendChart(rec) {
     <td>${esc(r.Comments||'')}</td></tr>`).join('');
 
   readingHistoryTable.innerHTML = `<table class="reading-history-table"><thead><tr>
-    <th>Timestamp</th><th>Technician</th><th>P1 (bar)</th>${p2Col}<th>Flow In</th><th>Flow Out</th><th>Comments</th>
+    <th>Timestamp</th><th>Technician</th><th>P1 (psi)</th>${p2Col}<th>Flow In</th><th>Flow Out</th><th>Comments</th>
   </tr></thead><tbody>${rows}</tbody></table>`;
 }
 
@@ -818,6 +842,7 @@ function openEquipModal(id = null) {
     eq_bsi.value = rec.BSI_Number||''; eq_type.value = rec.Equipment_Type||'';
     eq_serial.value = rec.Serial_Number||''; eq_location.value = rec.Location||'';
     eq_due.value = rec.Due_Date||''; eq_inservice.checked = !!rec.In_Service; eq_dual.checked = !!rec.has_two_pressures;
+    eq_has_gas.checked = rec.has_gas !== false; // defaults true
   }
   equipModal.classList.remove('hidden'); eq_bsi.focus();
 }
@@ -833,7 +858,8 @@ equipModalSave.addEventListener('click', () => {
     const rec = { ID: generateId('REC'), BSI_Number: bsi, Equipment_Type: type,
       Serial_Number: eq_serial.value.trim(), Location: eq_location.value.trim(),
       Due_Date: eq_due.value||'', is_active: true, In_Service: eq_inservice.checked,
-      has_two_pressures: eq_dual.checked, last_reading: null, last_modified: new Date().toISOString() };
+      has_two_pressures: eq_dual.checked, has_gas: eq_has_gas.checked, 
+      last_reading: null, last_modified: new Date().toISOString() };
     pendingChanges[rec.ID] = { ...rec, __fullRecord: true };
   } else {
     if (!pendingChanges[editingEquipId]) pendingChanges[editingEquipId] = {};
@@ -841,6 +867,7 @@ equipModalSave.addEventListener('click', () => {
       BSI_Number: bsi, Equipment_Type: type, Serial_Number: eq_serial.value.trim(),
       Location: eq_location.value.trim(), Due_Date: eq_due.value||'',
       In_Service: eq_inservice.checked, has_two_pressures: eq_dual.checked,
+      has_gas: eq_has_gas.checked,
     });
   }
   updateChangeCount(); renderTable(); closeEquipModal();

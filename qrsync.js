@@ -90,39 +90,54 @@ function reconstructChunks(frames) {
 // ============================================================
 // ANIMATED QR DISPLAY
 // ============================================================
-let _qrAnimTimer = null;
+let currentQRFrames = [];
+let currentQRIdx = 0;
+let currentQRCanvasId = null;
+let currentQRProgressId = null;
 
-function stopAnimatedQR() {
-  if (_qrAnimTimer) { clearInterval(_qrAnimTimer); _qrAnimTimer = null; }
+function stopAnimatedQR() {}
+
+async function drawCurrentFrame() {
+  if (!currentQRFrames.length) return;
+  const canvas = document.getElementById(currentQRCanvasId);
+  const progress = document.getElementById(currentQRProgressId);
+  if (!canvas) return;
+
+  const frame = currentQRFrames[currentQRIdx];
+  await QRCode.toCanvas(canvas, frame, {
+    width: 260, margin: 1,
+    color: {
+      dark:  document.body.classList.contains('light-theme') ? '#1a1d2e' : '#e8eaf2',
+      light: document.body.classList.contains('light-theme') ? '#ffffff' : '#0f1117',
+    },
+    errorCorrectionLevel: 'M',
+  });
+
+  if (progress) {
+    progress.textContent = currentQRFrames.length > 1
+      ? `Frame ${currentQRIdx + 1} of ${currentQRFrames.length} — navigate manually`
+      : 'Single frame — scan this code';
+  }
 }
 
 async function startAnimatedQR(canvasId, progressId, frames) {
-  stopAnimatedQR();
-  const canvas   = document.getElementById(canvasId);
-  const progress = document.getElementById(progressId);
-  let idx = 0;
+  currentQRFrames = frames;
+  currentQRIdx = 0;
+  currentQRCanvasId = canvasId;
+  currentQRProgressId = progressId;
 
-  async function drawFrame() {
-    const frame = frames[idx % frames.length];
-    await QRCode.toCanvas(canvas, frame, {
-      width: 260,
-      margin: 1,
-      color: {
-        dark:  document.body.classList.contains('light-theme') ? '#1a1d2e' : '#e8eaf2',
-        light: document.body.classList.contains('light-theme') ? '#ffffff' : '#0f1117',
-      },
-      errorCorrectionLevel: 'M',
-    });
-    if (progress) {
-      progress.textContent = frames.length > 1
-        ? `Frame ${(idx % frames.length) + 1} of ${frames.length} — hold phone steady`
-        : 'Single frame — scan this code';
-    }
-    idx++;
+  const canvas = document.getElementById(canvasId);
+  if (canvas) canvas.classList.remove('hidden');
+
+  // Toggle navigation buttons
+  const navId = canvasId === 'qrCanvas' ? 'qrNavCheckout' : 'qrNavSync';
+  const navEl = document.getElementById(navId);
+  if (navEl) {
+    if (frames.length > 1) navEl.classList.remove('hidden');
+    else navEl.classList.add('hidden');
   }
 
-  await drawFrame();
-  if (frames.length > 1) _qrAnimTimer = setInterval(drawFrame, QR_CYCLE_MS);
+  await drawCurrentFrame();
 }
 
 // ============================================================
@@ -366,8 +381,9 @@ async function clearActionLog() {
 // PC → PHONE: Generate Checkout QR
 // ============================================================
 async function generateCheckoutQR() {
-  // routinesData is a global from app.js
-  if (!window.routinesData || !window.routinesData.length) {
+  // Use getEffectiveRecords from app.js
+  const recs = typeof getEffectiveRecords === 'function' ? getEffectiveRecords() : [];
+  if (!recs || !recs.length) {
     showQRToast('Open Routines.json first.', 'warning');
     return;
   }
@@ -375,7 +391,7 @@ async function generateCheckoutQR() {
   const envelope = {
     sync_type:   'checkout',
     checkout_at: new Date().toISOString(),
-    routines:    window.routinesData,
+    routines:    recs,
   };
 
   const compressed = qrCompress(envelope);
@@ -383,7 +399,7 @@ async function generateCheckoutQR() {
   const frames     = buildChunkFrames(sessionId, compressed);
 
   document.getElementById('qrFrameCount').textContent =
-    `${frames.length} frame(s) — ${window.routinesData.length} record(s)`;
+    `${frames.length} frame(s) — ${recs.length} record(s)`;
 
   await startAnimatedQR('qrCanvas', 'qrFrameInfo', frames);
   showQRToast(`Checkout QR ready — ${frames.length} frame(s). Hold phone steady.`, 'success');
@@ -441,10 +457,10 @@ async function generateSyncQR() {
   const sessionId  = makeSessionId();
   const frames     = buildChunkFrames(sessionId, compressed);
 
-  document.getElementById('qrFrameCount').textContent =
+  document.getElementById('qrFrameCountSync').textContent =
     `${frames.length} frame(s) — ${actions.length} action(s)`;
 
-  await startAnimatedQR('qrCanvas', 'qrFrameInfo', frames);
+  await startAnimatedQR('qrCanvasSync', 'qrFrameInfoSync', frames);
   showQRToast(`Sync QR ready — ${frames.length} frame(s), ${actions.length} action(s).`, 'success');
 }
 
@@ -630,6 +646,18 @@ function initQRSync() {
 
   // PC: Generate Checkout QR
   document.getElementById('btnGenerateCheckout')?.addEventListener('click', generateCheckoutQR);
+
+  // Manual QR Navigation
+  const navigateQR = (dir) => {
+    if (currentQRFrames.length > 1) {
+      currentQRIdx = (currentQRIdx + dir + currentQRFrames.length) % currentQRFrames.length;
+      drawCurrentFrame();
+    }
+  };
+  document.getElementById('btnQrPrevCheckout')?.addEventListener('click', () => navigateQR(-1));
+  document.getElementById('btnQrNextCheckout')?.addEventListener('click', () => navigateQR(1));
+  document.getElementById('btnQrPrevSync')?.addEventListener('click', () => navigateQR(-1));
+  document.getElementById('btnQrNextSync')?.addEventListener('click', () => navigateQR(1));
 
   // Phone: Scan Checkout QR
   document.getElementById('btnScanCheckout')?.addEventListener('click', () => {

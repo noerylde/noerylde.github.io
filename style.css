@@ -570,6 +570,8 @@ input[type="date"]::-webkit-calendar-picker-indicator { filter: invert(0.6); cur
 /* visibility controlled by JS via classList.add/remove('hidden') */
 .pc-only     { transition: none; }
 .mobile-only { transition: none; }
+.view-only   { display: inline-flex; }
+body.edit-mode .view-only { display: none !important; }
 
 /* ═══════════════════════════════════════════
    RESPONSIVE

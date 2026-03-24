@@ -6,17 +6,17 @@
     "Serial_Number": "SN-7734A",
     "Location": "Pump Station A",
     "Due_Date": "2026-04-10",
-    "is_active": true,
+    "is_active": false,
     "In_Service": true,
     "has_two_pressures": false,
-    "last_modified": "2026-03-24T13:00:00.000Z",
+    "last_modified": "2026-03-24T17:36:24.757Z",
     "last_reading": {
-      "Timestamp": "2026-03-24T08:15:00.000Z",
-      "User": "Tech A",
-      "Pressure_1": 45.8,
+      "Timestamp": "2026-03-24T17:36:10.912Z",
+      "User": "Ryley",
+      "Pressure_1": 1,
       "Pressure_2": null,
-      "Flow_In": 231,
-      "Flow_Out": 229
+      "Flow_In": 1,
+      "Flow_Out": 1
     }
   },
   {
@@ -26,10 +26,10 @@
     "Serial_Number": "SN-2210B",
     "Location": "Pump Station A",
     "Due_Date": "2026-03-15",
-    "is_active": true,
+    "is_active": false,
     "In_Service": true,
     "has_two_pressures": false,
-    "last_modified": "2026-03-20T09:00:00.000Z",
+    "last_modified": "2026-03-24T17:36:26.840Z",
     "last_reading": null
   },
   {
@@ -39,10 +39,10 @@
     "Serial_Number": "SN-PRV-003",
     "Location": "Building B — Line 3",
     "Due_Date": "2026-02-28",
-    "is_active": true,
+    "is_active": false,
     "In_Service": false,
     "has_two_pressures": true,
-    "last_modified": "2026-03-21T09:00:00.000Z",
+    "last_modified": "2026-03-24T17:36:28.322Z",
     "last_reading": {
       "Timestamp": "2026-03-21T09:00:00.000Z",
       "User": "Tech B",
@@ -59,10 +59,10 @@
     "Serial_Number": "SN-COMP-41",
     "Location": "Compressor Room",
     "Due_Date": "2026-05-20",
-    "is_active": true,
+    "is_active": false,
     "In_Service": true,
     "has_two_pressures": true,
-    "last_modified": "2026-03-24T07:50:00.000Z",
+    "last_modified": "2026-03-24T17:36:29.940Z",
     "last_reading": {
       "Timestamp": "2026-03-24T07:50:00.000Z",
       "User": "Tech A",
@@ -79,10 +79,10 @@
     "Serial_Number": "SN-HX-105",
     "Location": "Building C",
     "Due_Date": "2026-06-01",
-    "is_active": true,
+    "is_active": false,
     "In_Service": true,
     "has_two_pressures": false,
-    "last_modified": "2026-03-20T09:00:00.000Z",
+    "last_modified": "2026-03-24T17:36:31.512Z",
     "last_reading": null
   },
   {
@@ -92,10 +92,10 @@
     "Serial_Number": "SN-CV-006",
     "Location": "Pump Station B",
     "Due_Date": "2026-01-31",
-    "is_active": true,
+    "is_active": false,
     "In_Service": false,
     "has_two_pressures": false,
-    "last_modified": "2026-03-20T09:00:00.000Z",
+    "last_modified": "2026-03-24T17:36:32.806Z",
     "last_reading": null
   },
   {
@@ -105,10 +105,10 @@
     "Serial_Number": "SN-MOV-007",
     "Location": "Building A — Level 2",
     "Due_Date": "2026-04-30",
-    "is_active": true,
+    "is_active": false,
     "In_Service": true,
     "has_two_pressures": false,
-    "last_modified": "2026-03-20T09:00:00.000Z",
+    "last_modified": "2026-03-24T17:36:34.206Z",
     "last_reading": null
   },
   {
@@ -118,10 +118,11 @@
     "Serial_Number": "SN-GEN-88X",
     "Location": "Generator Building",
     "Due_Date": "2026-03-30",
-    "is_active": true,
+    "is_active": false,
     "In_Service": true,
     "has_two_pressures": false,
-    "last_modified": "2026-03-24T06:30:00.000Z",
+    "has_gas": false,
+    "last_modified": "2026-03-24T17:36:35.788Z",
     "last_reading": {
       "Timestamp": "2026-03-24T06:30:00.000Z",
       "User": "Tech A",
@@ -130,5 +131,46 @@
       "Flow_In": null,
       "Flow_Out": null
     }
+  },
+  {
+    "ID": "REC-1774373817035-8616",
+    "BSI_Number": "67877-RC-01-01",
+    "Equipment_Type": "Equipment",
+    "Serial_Number": "NA",
+    "Location": "Here",
+    "Due_Date": "2026-03-30",
+    "is_active": true,
+    "In_Service": true,
+    "has_two_pressures": false,
+    "last_reading": {
+      "Timestamp": "2026-03-24T18:01:23.289Z",
+      "User": "Ryley",
+      "Pressure_1": 2000,
+      "Pressure_2": null,
+      "Flow_In": 100,
+      "Flow_Out": 100
+    },
+    "last_modified": "2026-03-24T18:01:23.559Z"
+  },
+  {
+    "ID": "REC-1774374827696-9106",
+    "BSI_Number": "67877",
+    "Equipment_Type": "SAM",
+    "Serial_Number": "1",
+    "Location": "1",
+    "Due_Date": "2025-03-01",
+    "is_active": true,
+    "In_Service": false,
+    "has_two_pressures": false,
+    "has_gas": false,
+    "last_reading": {
+      "Timestamp": "2026-03-24T18:01:05.474Z",
+      "User": "Ryley",
+      "Pressure_1": null,
+      "Pressure_2": null,
+      "Flow_In": null,
+      "Flow_Out": null
+    },
+    "last_modified": "2026-03-24T18:01:05.680Z"
   }
 ]

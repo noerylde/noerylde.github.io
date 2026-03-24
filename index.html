@@ -205,25 +205,29 @@
             <label for="lr_user">Technician <span class="required">*</span></label>
             <select id="lr_user" class="form-input"><option value="">— Select —</option></select>
           </div>
-          <div class="form-group">
-            <label for="lr_p1">Pressure 1 <span class="field-hint">(bar)</span></label>
+          <div class="form-group" id="lr_p1_group">
+            <label for="lr_p1">Pressure 1 <span class="field-hint">(psi)</span></label>
             <input id="lr_p1" type="number" step="0.1" class="form-input" placeholder="e.g. 45.2" />
           </div>
           <div class="form-group" id="lr_p2_group">
-            <label for="lr_p2">Pressure 2 <span class="field-hint">(bar)</span></label>
+            <label for="lr_p2">Pressure 2 <span class="field-hint">(psi)</span></label>
             <input id="lr_p2" type="number" step="0.1" class="form-input" placeholder="e.g. 44.8" />
           </div>
-          <div class="form-group">
+          <div class="form-group" id="lr_flow_in_group">
             <label for="lr_flow_in">Flow In <span class="field-hint">(L/min)</span></label>
             <input id="lr_flow_in" type="number" step="0.1" class="form-input" placeholder="" />
           </div>
-          <div class="form-group">
+          <div class="form-group" id="lr_flow_out_group">
             <label for="lr_flow_out">Flow Out <span class="field-hint">(L/min)</span></label>
             <input id="lr_flow_out" type="number" step="0.1" class="form-input" placeholder="" />
           </div>
           <div class="form-group full-width">
             <label for="lr_comments">Comments</label>
             <textarea id="lr_comments" class="form-textarea" rows="2" placeholder="Any observations…"></textarea>
+          </div>
+          <div class="form-group center-check full-width">
+            <label for="lr_inservice">In Service</label>
+            <input id="lr_inservice" type="checkbox" class="service-toggle" />
           </div>
         </div>
       </div>
@@ -311,6 +315,10 @@
             <label for="eq_dual">Dual Pressure <span class="field-hint">(2 bottles)</span></label>
             <input id="eq_dual" type="checkbox" class="form-checkbox" />
           </div>
+          <div class="form-group center-check full-width">
+            <label for="eq_has_gas">Uses Gas / Pressure <span class="field-hint">(uncheck for non-gas equipment)</span></label>
+            <input id="eq_has_gas" type="checkbox" class="form-checkbox" checked />
+          </div>
         </div>
       </div>
       <div class="modal-footer">
@@ -391,6 +399,10 @@
               <button id="btnGenerateCheckout" class="btn btn-primary btn-full">Generate Checkout QR</button>
               <div class="qr-canvas-wrap">
                 <canvas id="qrCanvas" class="qr-canvas hidden"></canvas>
+                <div id="qrNavCheckout" class="qr-nav hidden" style="margin: 10px 0; display: flex; justify-content: center; gap: 10px;">
+                  <button id="btnQrPrevCheckout" class="btn btn-secondary btn-sm">◄ Prev</button>
+                  <button id="btnQrNextCheckout" class="btn btn-secondary btn-sm">Next ►</button>
+                </div>
                 <p id="qrFrameInfo" class="qr-frame-info"></p>
                 <p id="qrFrameCount" class="qr-frame-count"></p>
               </div>
@@ -421,8 +433,12 @@
               <button id="btnGenerateSync" class="btn btn-primary btn-full">Generate Sync QR</button>
               <div class="qr-canvas-wrap">
                 <canvas id="qrCanvasSync" class="qr-canvas hidden"></canvas>
-                <p id="qrFrameInfo" class="qr-frame-info"></p>
-                <p id="qrFrameCount" class="qr-frame-count"></p>
+                <div id="qrNavSync" class="qr-nav hidden" style="margin: 10px 0; display: flex; justify-content: center; gap: 10px;">
+                  <button id="btnQrPrevSync" class="btn btn-secondary btn-sm">◄ Prev</button>
+                  <button id="btnQrNextSync" class="btn btn-secondary btn-sm">Next ►</button>
+                </div>
+                <p id="qrFrameInfoSync" class="qr-frame-info"></p>
+                <p id="qrFrameCountSync" class="qr-frame-count"></p>
               </div>
             </div>
             <!-- Right: Scan Daily Sync (PC) -->
@@ -471,7 +487,7 @@
   <!-- ═══════════ SCRIPTS ═══════════ -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/lz-string@1.5.0/libs/lz-string.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/qrcode/build/qrcode.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
   <script src="app.js"></script>
   <script src="qrsync.js"></script>
