@@ -105,7 +105,7 @@ async function drawCurrentFrame() {
 
   const frame = currentQRFrames[currentQRIdx];
   await QRCode.toCanvas(canvas, frame, {
-    width: 260, margin: 1,
+    width: 500, margin: 2,
     color: {
       dark:  document.body.classList.contains('light-theme') ? '#1a1d2e' : '#e8eaf2',
       light: document.body.classList.contains('light-theme') ? '#ffffff' : '#0f1117',
@@ -225,7 +225,7 @@ async function startCameraScanner(divId, onComplete) {
     _html5Scanner = new Html5Qrcode(divId, { verbose: false });
     await _html5Scanner.start(
       { facingMode: 'environment' },
-      { fps: 15 }, // Scan full frame to improve detection range
+      { fps: 15, qrbox: { width: 300, height: 300 }, aspectRatio: 1.0 },
       (decoded) => _processRawScan(decoded),
       () => {} // silent frame errors
     );
