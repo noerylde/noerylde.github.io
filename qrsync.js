@@ -35,13 +35,12 @@ const IDB_META      = 'metadata';
 // COMPRESSION  (lz-string)
 // ============================================================
 function qrCompress(obj) {
-  const json   = JSON.stringify(obj);
-  const comp   = LZString.compressToBase64(json);
-  return comp;
+  const json = JSON.stringify(obj);
+  return LZString.compressToEncodedURIComponent(json);
 }
 
-function qrDecompress(b64) {
-  const json = LZString.decompressFromBase64(b64);
+function qrDecompress(encoded) {
+  const json = LZString.decompressFromEncodedURIComponent(encoded);
   if (!json) throw new Error('Decompression failed — data may be corrupt or incomplete.');
   return JSON.parse(json);
 }
@@ -110,7 +109,7 @@ async function drawCurrentFrame() {
       dark:  document.body.classList.contains('light-theme') ? '#1a1d2e' : '#e8eaf2',
       light: document.body.classList.contains('light-theme') ? '#ffffff' : '#0f1117',
     },
-    errorCorrectionLevel: 'M',
+    errorCorrectionLevel: 'L',  // Low EC = maximum data capacity
   });
 
   if (progress) {
@@ -353,6 +352,26 @@ async function clearDraftReading() {
 }
 
 // ============================================================
+// MOBILE DATA LOADERS  (called by app.js on startup / after scan)
+// ============================================================
+async function loadMobileEquipment() {
+  const recs = await idbGetAll(IDB_EQUIP);
+  // Push into the module-level routinesData array kept in app.js
+  // We mutate in place so all references remain valid.
+  routinesData.length = 0;
+  recs.forEach(r => routinesData.push(r));
+  return recs;
+}
+
+async function loadMobileHistory() {
+  const rows = await idbGetAll(IDB_HISTORY);
+  histData.length = 0;
+  rows.forEach(r => histData.push(r));
+  histLoaded = rows.length > 0;
+  return rows;
+}
+
+// ============================================================
 // ACTION LOG  (mobile side, tracks changes for Sync QR)
 // ============================================================
 async function appendActionLog(type, equipmentId, payload) {
@@ -378,20 +397,31 @@ async function clearActionLog() {
 }
 
 // ============================================================
-// PC → PHONE: Generate Checkout QR
+// PC → PHONE: Generate Checkout QR  (7-day slice)
 // ============================================================
 async function generateCheckoutQR() {
-  // Use getEffectiveRecords from app.js
   const recs = typeof getEffectiveRecords === 'function' ? getEffectiveRecords() : [];
   if (!recs || !recs.length) {
     showQRToast('Open Routines.json first.', 'warning');
     return;
   }
 
+  // Build 7-day history slice from global histData
+  const cutoff = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+  const hist7  = (typeof histData !== 'undefined' ? histData : [])
+    .filter(r => new Date(r.Timestamp) >= cutoff);
+
+  // Attach only recent readings per equipment record
+  const slicedRecs = recs.map(r => {
+    const recent = hist7.filter(h => h.Equipment_ID === r.ID);
+    return recent.length ? { ...r, recent_history: recent } : r;
+  });
+
   const envelope = {
     sync_type:   'checkout',
     checkout_at: new Date().toISOString(),
-    routines:    recs,
+    routines:    slicedRecs,
+    hist7,
   };
 
   const compressed = qrCompress(envelope);
@@ -399,10 +429,10 @@ async function generateCheckoutQR() {
   const frames     = buildChunkFrames(sessionId, compressed);
 
   document.getElementById('qrFrameCount').textContent =
-    `${frames.length} frame(s) — ${recs.length} record(s)`;
+    `${frames.length} frame(s) — ${recs.length} records, ${hist7.length} readings (≤7 days)`;
 
   await startAnimatedQR('qrCanvas', 'qrFrameInfo', frames);
-  showQRToast(`Checkout QR ready — ${frames.length} frame(s). Hold phone steady.`, 'success');
+  showQRToast(`Checkout QR ready — ${frames.length} frame(s).`, 'success');
 }
 
 // ============================================================
@@ -416,17 +446,27 @@ async function onCheckoutScanned(envelope) {
 
   showQRToast('Processing checkout data…', 'info', 2000);
 
+  // Wipe old local state (equipment + history + pending actions)
   await idbClear(IDB_EQUIP);
+  await idbClear(IDB_HISTORY);
   await idbClear(IDB_ACTIONLOG);
 
+  // Write equipment to IDB
   for (const rec of envelope.routines) {
-    await idbPut(IDB_EQUIP, rec);
+    const { recent_history, ...clean } = rec;
+    await idbPut(IDB_EQUIP, clean);
   }
+
+  // Write 7-day history to IDB
+  for (const entry of (envelope.hist7 || [])) {
+    await idbPut(IDB_HISTORY, entry);
+  }
+
   await idbSetMeta('checkout_at', envelope.checkout_at);
 
-  // Mirror into app globals so the table renders
-  window.routinesData = envelope.routines;
-  window.histLoaded   = false;
+  // Reload from IDB into app globals (the reliable cross-scope path)
+  await loadMobileEquipment();
+  await loadMobileHistory();
 
   if (typeof renderTable === 'function') renderTable();
   stopScanner();
