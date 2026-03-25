@@ -352,26 +352,6 @@ async function clearDraftReading() {
 }
 
 // ============================================================
-// MOBILE DATA LOADERS  (called by app.js on startup / after scan)
-// ============================================================
-async function loadMobileEquipment() {
-  const recs = await idbGetAll(IDB_EQUIP);
-  // Push into the module-level routinesData array kept in app.js
-  // We mutate in place so all references remain valid.
-  routinesData.length = 0;
-  recs.forEach(r => routinesData.push(r));
-  return recs;
-}
-
-async function loadMobileHistory() {
-  const rows = await idbGetAll(IDB_HISTORY);
-  histData.length = 0;
-  rows.forEach(r => histData.push(r));
-  histLoaded = rows.length > 0;
-  return rows;
-}
-
-// ============================================================
 // ACTION LOG  (mobile side, tracks changes for Sync QR)
 // ============================================================
 async function appendActionLog(type, equipmentId, payload) {
@@ -406,30 +386,28 @@ async function generateCheckoutQR() {
     return;
   }
 
-  // Build 7-day history slice from global histData
+  // Build 7-day history slice per equipment
   const cutoff = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
-  const hist7  = (typeof histData !== 'undefined' ? histData : [])
-    .filter(r => new Date(r.Timestamp) >= cutoff);
+  let readingsCount = 0;
 
-  // Attach only recent readings per equipment record
   const slicedRecs = recs.map(r => {
-    const recent = hist7.filter(h => h.Equipment_ID === r.ID);
-    return recent.length ? { ...r, recent_history: recent } : r;
+    const recent = (r.readings || []).filter(h => new Date(h.Timestamp) >= cutoff);
+    readingsCount += recent.length;
+    return { ...r, readings: recent };
   });
 
   const envelope = {
     sync_type:   'checkout',
     checkout_at: new Date().toISOString(),
     routines:    slicedRecs,
-    hist7,
   };
 
   const compressed = qrCompress(envelope);
   const sessionId  = makeSessionId();
   const frames     = buildChunkFrames(sessionId, compressed);
 
-  document.getElementById('qrFrameCount').textContent =
-    `${frames.length} frame(s) — ${recs.length} records, ${hist7.length} readings (≤7 days)`;
+  const counterEl = document.getElementById('qrFrameCount');
+  if (counterEl) counterEl.textContent = `${frames.length} frame(s) — ${recs.length} records, ${readingsCount} readings`;
 
   await startAnimatedQR('qrCanvas', 'qrFrameInfo', frames);
   showQRToast(`Checkout QR ready — ${frames.length} frame(s).`, 'success');
@@ -448,25 +426,18 @@ async function onCheckoutScanned(envelope) {
 
   // Wipe old local state (equipment + history + pending actions)
   await idbClear(IDB_EQUIP);
-  await idbClear(IDB_HISTORY);
+  await idbClear(IDB_HISTORY); // kept for backwards compat cleanup
   await idbClear(IDB_ACTIONLOG);
 
-  // Write equipment to IDB
+  // Write equipment to IDB (readings are embedded)
   for (const rec of envelope.routines) {
-    const { recent_history, ...clean } = rec;
-    await idbPut(IDB_EQUIP, clean);
-  }
-
-  // Write 7-day history to IDB
-  for (const entry of (envelope.hist7 || [])) {
-    await idbPut(IDB_HISTORY, entry);
+    await idbPut(IDB_EQUIP, rec);
   }
 
   await idbSetMeta('checkout_at', envelope.checkout_at);
 
-  // Reload from IDB into app globals (the reliable cross-scope path)
+  // Reload from IDB into app globals
   await loadMobileEquipment();
-  await loadMobileHistory();
 
   if (typeof renderTable === 'function') renderTable();
   stopScanner();
@@ -584,8 +555,8 @@ async function applyActionLog(actions, envelope) {
 
   for (const action of actions) {
     if (action.type === 'log_reading') {
-      // Append to histData + update last_reading via existing logReading() flow
-      if (window.histHandle) {
+      // Append via existing logReading() flow
+      if (typeof routinesHandle !== 'undefined' && routinesHandle) {
         await logReading(action.equipment_id, {
           user:     action.payload.User     || '',
           p1:       action.payload.Pressure_1 ?? '',
@@ -595,10 +566,21 @@ async function applyActionLog(actions, envelope) {
           comments: action.payload.Comments || '',
         });
       } else {
-        // No histHandle open — add to in-memory histData so it shows in trends
-        if (window.histData) {
-          const exists = window.histData.find(r => r.ID === action.payload.ID);
-          if (!exists) window.histData.push(action.payload);
+        // No routinesHandle open — add to in-memory routinesData so it shows in trends
+        const eq = (window.routinesData || []).find(r => r.ID === action.equipment_id);
+        if (eq) {
+          if (!eq.readings) eq.readings = [];
+          if (!eq.readings.find(r => r.ID === action.payload.ID)) {
+            eq.readings.push(action.payload);
+          }
+          eq.last_reading = {
+            Timestamp:  action.payload.Timestamp,
+            User:       action.payload.User,
+            Pressure_1: action.payload.Pressure_1,
+            Pressure_2: action.payload.Pressure_2,
+            Flow_In:    action.payload.Flow_In,
+            Flow_Out:   action.payload.Flow_Out,
+          };
         }
       }
       readingCount++;
@@ -750,13 +732,14 @@ async function mobileLogReading(equipId, readingData) {
     Flow_Out:     readingData.flowOut !== '' ? Number(readingData.flowOut) : null,
     Comments:     readingData.comments,
   };
-  await idbPut(IDB_HISTORY, reading);
   await appendActionLog('log_reading', equipId, reading);  // also triggers badge update
   await clearDraftReading();  // discard in-progress form draft
 
-  // Update last_reading snapshot on local equipment record
+  // Update local equipment record and embedded history array
   const eq = (window.routinesData || []).find(r => r.ID === equipId);
   if (eq) {
+    if (!eq.readings) eq.readings = [];
+    eq.readings.push(reading);
     eq.last_reading = {
       Timestamp:  reading.Timestamp,
       User:       reading.User,
@@ -790,11 +773,6 @@ async function mobileUpdateEquipment(equipId, fields) {
 async function loadMobileEquipment() {
   const records = await idbGetAll(IDB_EQUIP);
   window.routinesData = records;
-  window.histLoaded   = false;
-
-  const hist = await idbGetAll(IDB_HISTORY);
-  window.histData = hist;
-  if (hist.length) window.histLoaded = true;
 
   // Check for pending unsynced actions — alert user their work is safe
   const pending = await idbGetAll(IDB_ACTIONLOG);

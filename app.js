@@ -16,10 +16,7 @@
 // STATE
 // ============================================================
 let routinesHandle = null;
-let histHandle     = null;
-let routinesData   = [];    // shared global — readable by qrsync.js
-let histData       = [];    // shared global
-let histLoaded     = false;
+window.routinesData = [];    // Explicitly global
 let isEditMode     = false;
 let users          = [];
 
@@ -44,7 +41,6 @@ today.setHours(0, 0, 0, 0);
 // DOM REFS
 // ============================================================
 const btnOpenRoutines   = document.getElementById('btnOpenRoutines');
-const btnOpenHistory    = document.getElementById('btnOpenHistory');
 const btnSave           = document.getElementById('btnSave');
 const btnRefresh        = document.getElementById('btnRefresh');
 const btnUsers          = document.getElementById('btnUsers');
@@ -57,9 +53,7 @@ const statusBadge       = document.getElementById('statusBadge');
 const changeCountEl     = document.getElementById('changeCount');
 const changeNumEl       = document.getElementById('changeNum');
 const routinesFileName  = document.getElementById('routinesFileName');
-const historyFileName   = document.getElementById('historyFileName');
 const routinesIndicator = document.getElementById('routinesIndicator');
-const historyIndicator  = document.getElementById('historyIndicator');
 const themeToggle       = document.getElementById('themeToggle');
 const filterBar         = document.getElementById('filterBar');
 const searchInput       = document.getElementById('searchInput');
@@ -316,7 +310,9 @@ btnOpenRoutines?.addEventListener('click', async () => {
     showLoading('Reading Routines…');
     const data = await readFileToJson(h);
     if (!Array.isArray(data)) throw new Error('Expected a JSON array.');
-    routinesHandle = h; routinesData = data; pendingChanges = {};
+    // Schema migration: ensure 'readings' array exists
+    data.forEach(r => { if (!r.readings) r.readings = []; });
+    routinesHandle = h; window.routinesData = data; pendingChanges = {};
     routinesFileName.textContent = 'Routines: ' + h.name;
     routinesIndicator.classList.add('has-file');
     editModeWrap.style.display = '';
@@ -327,28 +323,10 @@ btnOpenRoutines?.addEventListener('click', async () => {
   } catch (err) { hideLoading(); if (err.name !== 'AbortError') showToast('Open failed: ' + err.message, 'error'); }
 });
 
-btnOpenHistory?.addEventListener('click', async () => {
-  if (!window.showOpenFilePicker) return;
-  try {
-    const [h] = await window.showOpenFilePicker({
-      types: [{ description: 'JSON', accept: { 'application/json': ['.json'] } }],
-    });
-    showLoading('Reading History…');
-    const data = await readFileToJson(h);
-    if (!Array.isArray(data)) throw new Error('Expected a JSON array.');
-    histHandle = h; histData = data; histLoaded = true;
-    historyFileName.textContent = 'History: ' + h.name;
-    historyIndicator.classList.add('has-file');
-    renderTable(); hideLoading();
-    showToast(`History loaded — ${data.length} readings.`);
-  } catch (err) { hideLoading(); if (err.name !== 'AbortError') showToast('Open failed: ' + err.message, 'error'); }
-});
-
 btnRefresh?.addEventListener('click', async () => {
   showLoading('Refreshing…');
   try {
-    if (routinesHandle) routinesData = await readFileToJson(routinesHandle);
-    if (histHandle)     histData     = await readFileToJson(histHandle);
+    if (routinesHandle) window.routinesData = await readFileToJson(routinesHandle);
     renderTable(); showToast('Refreshed.', 'info');
   } catch (e) { showToast('Refresh failed: ' + e.message, 'error'); }
   hideLoading();
@@ -391,10 +369,9 @@ async function saveEquipmentSync() {
       }
     }
 
-    loadingMsg.textContent = 'Writing…';
     const merged = [...freshMap.values()];
     await writeJsonToFile(routinesHandle, merged);
-    routinesData = merged; pendingChanges = {};
+    window.routinesData = merged; pendingChanges = {};
 
     lastSavedEl.textContent = 'Last saved: ' + new Date().toLocaleTimeString(undefined, { hour:'2-digit', minute:'2-digit' });
     updateChangeCount(); renderTable(); hideLoading();
@@ -424,9 +401,9 @@ async function logReading(equipId, readingData) {
     return;
   }
 
-  if (!histHandle || !routinesHandle)
-    return showToast('Open both Routines and History files first.', 'warning', 5000);
-  if (!await ensureWritePermission(histHandle) || !await ensureWritePermission(routinesHandle))
+  if (!routinesHandle)
+    return showToast('Open Routines file first.', 'warning', 5000);
+  if (!await ensureWritePermission(routinesHandle))
     return showToast('Write permission denied.', 'error');
 
   const reading = {
@@ -443,19 +420,16 @@ async function logReading(equipId, readingData) {
 
   logSpinner?.classList.remove('hidden');
   logModalSubmit.disabled = true;
-  showLoading('Appending to History…');
+  showLoading('Appending to Routines…');
 
   try {
-    const freshHist = await readFileToJson(histHandle);
-    if (!freshHist.find(r => r.ID === reading.ID))
-      freshHist.push(reading);
-    await writeJsonToFile(histHandle, freshHist);
-    histData = freshHist;
-
-    loadingMsg.textContent = 'Updating snapshot…';
     const freshRoutines = await readFileToJson(routinesHandle);
     const eq = freshRoutines.find(r => r.ID === equipId);
     if (eq) {
+      if (!eq.readings) eq.readings = [];
+      if (!eq.readings.find(r => r.ID === reading.ID)) {
+        eq.readings.push(reading);
+      }
       eq.last_reading = {
         Timestamp: reading.Timestamp, User: reading.User,
         Pressure_1: reading.Pressure_1, Pressure_2: reading.Pressure_2,
@@ -464,7 +438,7 @@ async function logReading(equipId, readingData) {
       eq.last_modified = new Date().toISOString();
     }
     await writeJsonToFile(routinesHandle, freshRoutines);
-    routinesData = freshRoutines;
+    window.routinesData = freshRoutines;
 
     renderTable(); hideLoading(); closeLogModal();
     showToast('Reading logged ✔', 'success');
@@ -532,7 +506,10 @@ function renderTable() {
   const active  = all.filter(r => r.is_active).length;
   const overdue = all.filter(r => r.is_active && isOverdue(r.Due_Date)).length;
   const todayStr = new Date().toISOString().slice(0, 10);
-  const todayLogs = histLoaded ? histData.filter(r => r.Timestamp?.startsWith(todayStr)).length : 0;
+  let todayLogs = 0;
+  all.forEach(r => {
+    if (r.readings) todayLogs += r.readings.filter(rd => rd.Timestamp?.startsWith(todayStr)).length;
+  });
 
   statTotal.textContent  = `${all.length} total`;
   statActive.textContent = `${active} active`;
@@ -738,7 +715,6 @@ lr_user.addEventListener('change', saveMobileDraft);  // technician select
 // MODAL: TREND VIEW
 // ============================================================
 function openTrendModal(equipId) {
-  if (!histLoaded) return showToast('Open History.json to view trends.', 'warning');
   trendEquipId = equipId;
   const rec = getEffectiveRecords().find(r => r.ID === equipId);
   if (!rec) return;
@@ -762,8 +738,7 @@ trendRange.addEventListener('change', () => {
 function buildTrendChart(rec) {
   const days   = parseInt(trendRange.value, 10);
   const cutoff = days > 0 ? new Date(Date.now() - days * 86400e3) : null;
-  const readings = histData
-    .filter(r => r.Equipment_ID === rec.ID)
+  const readings = (rec.readings || [])
     .filter(r => !cutoff || new Date(r.Timestamp) >= cutoff)
     .sort((a,b) => new Date(a.Timestamp) - new Date(b.Timestamp));
 
